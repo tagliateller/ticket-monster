@@ -1,0 +1,18 @@
+````bash
+c:\Users\Robert\Workspace\ticket-monster>oc new-app ticket-monster-wildfly
+--> Deploying template ticket-monster-wildfly for "ticket-monster-wildfly"
+     With parameters:
+      APPLICATION_NAME=ticket-monster
+      APPLICATION_HOSTNAME=
+      GIT_URI=https://github.com/tagliateller/ticket-monster.git
+      GIT_REF=2.7.0.Final
+      GIT_ADD_PATH=/demo
+--> Creating resources with label app=ticket-monster ...
+    buildconfig "ticket-monster" created
+    imagestream "ticket-monster" created
+    error: DeploymentConfig "ticket-monster" is invalid: spec.template.spec.containers[0].ports[0].name: Invalid value: "ticket-monster-http": must be an IANA_SVC_NAME (at most 15 characters, matching regex [a-z0-9]([a-z0-9-]*[a-z0-9])*, it must contain at least one letter [a-z], and hyphens cannot be adjacent to other hyphens): e.g. "http"
+    route "ticket-monster" created
+    service "ticket-monster" created
+
+c:\Users\Robert\Workspace\ticket-monster>
+```
