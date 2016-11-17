@@ -1,4 +1,4 @@
-````bash
+```bash
 c:\Users\Robert\Workspace\ticket-monster>oc new-app ticket-monster-wildfly
 --> Deploying template ticket-monster-wildfly for "ticket-monster-wildfly"
      With parameters:
