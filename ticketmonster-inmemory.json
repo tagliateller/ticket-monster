@@ -9,7 +9,7 @@
       }
    },
    "labels": {
-      "application": "mlbparks",
+      "application": "ticketmonster",
       "createdBy": "template-ticketmonster-wildfly"
    },
    "parameters": [
@@ -153,7 +153,6 @@
                         "image": "${APPLICATION_NAME}",
                         "ports": [
                            {
-                              "name": "${APPLICATION_NAME}-http",
                               "containerPort": 8080,
                               "protocol": "TCP"
                            }
