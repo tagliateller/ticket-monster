@@ -16,3 +16,9 @@ c:\Users\Robert\Workspace\ticket-monster>oc new-app ticket-monster-wildfly
 
 c:\Users\Robert\Workspace\ticket-monster>
 ```
+
+-> oc new-app ...json funktioniert, es kommen aber zwei Pods raus für Ticketmonster + TM ??
+
+-> TODO: MySQL Anbindung
+
+
