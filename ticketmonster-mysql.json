@@ -1,0 +1,373 @@
+{
+   "kind": "Template",
+   "apiVersion": "v1",
+   "metadata": {
+      "name": "ticket-monster-wildfly",
+      "annotations": {
+         "iconClass": "icon-wildfly",
+         "description": "Application template for Ticket-Monster application on WildFly built using STI"
+      }
+   },
+   "labels": {
+      "application": "ticketmonster",
+      "createdBy": "template-ticketmonster-wildfly"
+   },
+   "parameters": [
+      {
+         "description": "The name for the application.",
+         "name": "APPLICATION_NAME",
+         "value": "ticket-monster"
+      },
+      {
+         "description": "Custom hostname for service routes.  Leave blank for default hostname, e.g.: <application-name>.<project>.<default-domain-suffix>",
+         "name": "APPLICATION_HOSTNAME"
+      },
+      {
+          "description": "maven args",
+          "name": "MAVEN_ARGS",
+          "value": "-Popenshift-mysql -Dmaven.test.skip=true"
+      },
+      {
+         "description": "Git source URI for application",
+         "name": "GIT_URI",
+         "value": "https://github.com/tagliateller/ticket-monster.git"
+      },
+      {
+         "description": "Git branch/tag reference",
+         "name": "GIT_REF",
+         "value": "2.7.0.Final"
+      },
+      {
+         "description": "Git additional path",
+         "name": "GIT_ADD_PATH",
+         "value": "/demo"
+      },
+      {
+        "name": "MYSQL_DATABASE",
+        "description": "using mysql database",
+        "value": "ticketmonster"
+      },
+      {
+        "name": "MYSQL_USER",
+        "description": "database username",
+        "generate": "expression",
+        "from": "user[A-Z0-9]{3}"
+      },
+      {
+        "name": "MYSQL_PASSWORD",
+        "description": "database password",
+        "generate": "expression",
+        "from": "[a-zA-Z0-9]{8}"
+      },
+      {
+        "name": "MYSQL_SERVICE_HOST",
+        "description": "database service host",
+        "value": "mysql"
+      },
+      {
+        "name": "MYSQL_SERVICE_PORT",
+        "description": "database service port",
+        "value": "3306"
+      }
+   ],
+   "objects": [
+      {
+         "kind": "BuildConfig",
+         "apiVersion": "v1",
+         "metadata": {
+            "name": "${APPLICATION_NAME}"
+         },
+         "spec": {
+            "triggers": [
+               {
+                  "type": "Generic",
+                  "generic": {
+                     "secret": "${GENERIC_TRIGGER_SECRET}"
+                  }
+               },
+               {
+                  "type": "GitHub",
+                  "github": {
+                     "secret": "${GITHUB_TRIGGER_SECRET}"
+                  }
+               },
+               {
+                  "type": "ImageChange",
+                  "imageChange": {}
+               }
+            ],
+            "source": {
+               "type": "Git",
+               "git": {
+                  "uri": "${GIT_URI}",
+                  "ref": "${GIT_REF}"
+               },
+               "contextDir": "${GIT_ADD_PATH}"
+            },
+            "strategy": {
+               "type": "Source",
+               "env": [
+                            {
+                                "name": "MAVEN_ARGS",
+                                "value": "${MAVEN_ARGS}"
+                            },
+                            {
+                                "name": "MYSQL_DATABASE",
+                                "value": "${MYSQL_DATABASE}"
+                            },
+                            {
+                                "name": "MYSQL_USER",
+                                "value": "${MYSQL_USER}"
+                            },
+                            {
+                                "name": "MYSQL_PASSWORD",
+                                "value": "${MYSQL_PASSWORD}"
+                            },
+                            {
+                                "name": "MYSQL_SERVICE_HOST",
+                                "value": "${MYSQL_SERVICE_HOST}"
+                            },
+                            {
+                                "name": "MYSQL_SERVICE_PORT",
+                                "value": "${MYSQL_SERVICE_PORT}"
+                            }
+                      ],
+               "sourceStrategy": {
+                 "from": {
+                    "kind": "DockerImage",
+                    "name": "openshift/wildfly-100-centos7:latest"
+                  }
+               }
+            },
+            "output": {
+               "to": {
+                  "kind": "ImageStreamTag",
+                  "name": "${APPLICATION_NAME}:latest"
+               }
+            }
+         }
+      },
+      {
+         "kind": "ImageStream",
+         "apiVersion": "v1",
+         "metadata": {
+            "name": "${APPLICATION_NAME}"
+         },
+         "spec": {
+            "dockerImageRepository": "",
+            "tags": [
+               {
+                  "name": "latest"
+               }
+            ]
+         }
+      },
+      {
+         "kind": "DeploymentConfig",
+         "apiVersion": "v1",
+         "metadata": {
+            "name": "${APPLICATION_NAME}",
+            "labels": {
+               "deploymentConfig": "${APPLICATION_NAME}"
+            }
+         },
+         "spec": {
+            "strategy": {
+               "type": "Recreate"
+            },
+            "triggers": [
+               {
+                  "type": "ImageChange",
+                  "imageChangeParams": {
+                     "automatic": true,
+                     "containerNames": [
+                        "${APPLICATION_NAME}"
+                     ],
+                     "from": {
+                        "kind": "ImageStreamTag",
+                        "name": "${APPLICATION_NAME}:latest"
+                     }
+                  }
+               },
+               {
+                  "type": "ConfigChange"
+               }
+            ],
+            "replicas": 1,
+            "selector": {
+               "deploymentConfig": "${APPLICATION_NAME}"
+            },
+            "template": {
+               "metadata": {
+                  "labels": {
+                     "deploymentConfig": "${APPLICATION_NAME}"
+                  }
+               },
+               "spec": {
+                  "containers": [
+                     {
+                        "name": "${APPLICATION_NAME}",
+                        "image": "${APPLICATION_NAME}",
+                        "ports": [
+                           {
+                              "containerPort": 8080,
+                              "protocol": "TCP"
+                           }
+                        ],
+                        "readinessProbe": {
+                           "httpGet": {
+                              "path": "/",
+                              "port": 8080
+                           }
+                        },
+                        "resources": {},
+                        "terminationMessagePath": "/dev/termination-log",
+                        "imagePullPolicy": "Always",
+                        "securityContext": {
+                           "capabilities": {},
+                           "privileged": false
+                        }
+                     }
+                  ],
+                  "restartPolicy": "Always",
+                  "dnsPolicy": "ClusterFirst"
+               }
+            }
+         }
+      },
+      {
+         "kind": "Route",
+         "apiVersion": "v1",
+         "metadata": {
+            "name": "${APPLICATION_NAME}",
+            "annotations": {
+               "description": "Route for application's http service"
+            }
+         },
+         "spec": {
+            "host": "${APPLICATION_HOSTNAME}",
+            "to": {
+               "kind": "Service",
+               "name": "${APPLICATION_NAME}"
+            }
+         }
+      },
+      {
+         "kind": "Service",
+         "apiVersion": "v1",
+         "metadata": {
+            "name": "${APPLICATION_NAME}",
+            "annotations": {
+               "description": "The web server's http port"
+            }
+         },
+         "spec": {
+            "ports": [
+               {
+                  "protocol": "TCP",
+                  "port": 8080,
+                  "targetPort": 8080
+               }
+            ],
+            "selector": {
+               "deploymentConfig": "${APPLICATION_NAME}"
+            }
+         }
+      },
+	  {
+		"kind": "Service",
+		"apiVersion": "v1",
+		"metadata": {
+			"name": "mysql",
+			"creationTimestamp": null
+		},
+		"spec": {
+			"ports": [
+				{
+					"port": 3306,
+					"targetPort": 3306
+				}
+			],
+			"selector": {
+				"name": "mysql"
+			},
+			"portalIP": "",
+			"type": "ClusterIP",
+			"sessionAffinity": "None"
+		}
+	},
+    {
+		"kind": "DeploymentConfig",
+		"apiVersion": "v1",
+		"metadata": {
+			"name": "mysql",
+			"creationTimestamp": null
+		},
+		"spec": {
+			"strategy": {
+				"type": "Recreate",
+				"recreateParams": {
+				},
+				"resources": {}
+			},
+			"triggers": [
+				{
+					"type": "ConfigChange"
+				}
+			],
+			"replicas": 1,
+			"selector": {
+				"name": "mysql"
+			},
+			"template": {
+				"metadata": {
+				"creationTimestamp": null,
+				"labels": {
+					"name": "mysql"
+				}
+			},
+			"spec": {
+				"containers": [
+				{
+					"name": "mysql",
+					"image": "openshift/mysql-55-centos7:latest",
+					"ports": [
+						{
+							"containerPort": 3306,
+							"protocol": "TCP"
+						}
+					],
+					"env": [
+					{
+						"name": "MYSQL_USER",
+						"value": "${MYSQL_USER}"
+					},
+					{
+						"name": "MYSQL_PASSWORD",
+						"value": "${MYSQL_PASSWORD}"
+					},
+					{
+						"name": "MYSQL_DATABASE",
+						"value": "${MYSQL_DATABASE}"
+					}
+					],
+					"resources": {},
+					"terminationMessagePath": "/dev/termination-log",
+					"imagePullPolicy": "Always",
+					"capabilities": {},
+					"securityContext": {
+						"capabilities": {},
+						"privileged": false
+					}
+				}
+				],
+				"restartPolicy": "Always",
+				"dnsPolicy": "ClusterFirst",
+				"serviceAccount": ""
+			}
+			}
+		},
+		"status": {}
+    }
+   ]
+}
