@@ -27,3 +27,5 @@ oc rsh [pod-name]
 Beispiele für Templates https://github.com/jboss-openshift/application-templates/blob/master/eap/eap64-mysql-persistent-s2i.json
 
 Aktuell geht die Übergabe der Maven-Args so noch nicht. WIr probieren eine Manipulation der pom.xml.
+
+Hilft auch nicht - mal das Thema ticketmonster-classic wieder ausprobieren und sehen, wie die eigentliche Konfig geht.
